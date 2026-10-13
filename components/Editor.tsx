@@ -2,7 +2,18 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, Italic, Heading1, Heading2, List, ListOrdered } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  Underline as UnderlineIcon,
+  Heading1,
+  Heading2,
+  List,
+  ListOrdered,
+  Undo2,
+  Redo2,
+} from 'lucide-react';
+import type { ReactNode } from 'react';
 
 interface EditorProps {
   content: string;
@@ -10,12 +21,52 @@ interface EditorProps {
   editable?: boolean;
 }
 
+function ToolbarButton({
+  onClick,
+  active = false,
+  disabled = false,
+  title,
+  children,
+}: {
+  onClick: () => void;
+  active?: boolean;
+  disabled?: boolean;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      aria-pressed={active}
+      className={`h-8 w-8 flex items-center justify-center rounded-md transition disabled:opacity-30 disabled:cursor-not-allowed ${
+        active
+          ? 'bg-blue-100 text-blue-700'
+          : 'text-gray-600 hover:bg-gray-100'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+const Divider = () => <div className="w-px h-5 bg-gray-200 mx-1" />;
+
 export default function Editor({ content, onChange, editable = true }: EditorProps) {
+  // Note: StarterKit in Tiptap v3 already includes Underline.
   const editor = useEditor({
     extensions: [StarterKit],
-    content: content,
-    editable: editable,
+    content,
+    editable,
     immediatelyRender: false,
+    editorProps: {
+      attributes: {
+        class: 'tiptap-content focus:outline-none',
+      },
+    },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -26,84 +77,88 @@ export default function Editor({ content, onChange, editable = true }: EditorPro
   }
 
   return (
-    <div className="w-full border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
-      {/* Formatting Toolbar */}
+    <div className="w-full">
       {editable && (
-        <div className="flex items-center gap-1 p-2 bg-gray-50 border-b border-gray-200 flex-wrap">
-          <button
-            type="button"
+        <div className="sticky top-0 z-10 mb-4 flex items-center gap-0.5 flex-wrap px-2 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm w-fit mx-auto">
+          <ToolbarButton
+            title="Undo (Ctrl+Z)"
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <Undo2 className="w-4 h-4" />
+          </ToolbarButton>
+          <ToolbarButton
+            title="Redo (Ctrl+Y)"
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <Redo2 className="w-4 h-4" />
+          </ToolbarButton>
+
+          <Divider />
+
+          <ToolbarButton
+            title="Bold (Ctrl+B)"
+            active={editor.isActive('bold')}
             onClick={() => editor.chain().focus().toggleBold().run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('bold') ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
-            title="Bold"
           >
             <Bold className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
+          </ToolbarButton>
+          <ToolbarButton
+            title="Italic (Ctrl+I)"
+            active={editor.isActive('italic')}
             onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('italic') ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
-            title="Italic"
           >
             <Italic className="w-4 h-4" />
-          </button>
+          </ToolbarButton>
+          <ToolbarButton
+            title="Underline (Ctrl+U)"
+            active={editor.isActive('underline')}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            <UnderlineIcon className="w-4 h-4" />
+          </ToolbarButton>
 
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <Divider />
 
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('heading', { level: 1 }) ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
+          <ToolbarButton
             title="Heading 1"
+            active={editor.isActive('heading', { level: 1 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           >
             <Heading1 className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('heading', { level: 2 }) ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
+          </ToolbarButton>
+          <ToolbarButton
             title="Heading 2"
+            active={editor.isActive('heading', { level: 2 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           >
             <Heading2 className="w-4 h-4" />
-          </button>
+          </ToolbarButton>
 
-          <div className="w-px h-5 bg-gray-300 mx-1" />
+          <Divider />
 
-          <button
-            type="button"
+          <ToolbarButton
+            title="Bulleted list"
+            active={editor.isActive('bulletList')}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('bulletList') ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
-            title="Bullet List"
           >
             <List className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
+          </ToolbarButton>
+          <ToolbarButton
+            title="Numbered list"
+            active={editor.isActive('orderedList')}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            className={`p-2 rounded hover:bg-gray-200 transition ${
-              editor.isActive('orderedList') ? 'bg-gray-300 text-black font-bold' : 'text-gray-600'
-            }`}
-            title="Numbered List"
           >
             <ListOrdered className="w-4 h-4" />
-          </button>
+          </ToolbarButton>
         </div>
       )}
 
-      {/* Main Text Content Surface */}
-      <EditorContent editor={editor} />
+      {/* The "paper" */}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm px-12 py-10 min-h-[480px]">
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
